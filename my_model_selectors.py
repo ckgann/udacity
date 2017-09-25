@@ -123,26 +123,50 @@ class SelectorDIC(ModelSelector):
 
 class SelectorCV(ModelSelector):
     ''' select best model based on average log Likelihood of cross-validation folds
-
+            model = SelectorCV(sequences, Xlengths, word, 
+                    min_n_components=2, max_n_components=15, random_state = 14).select()
+            model = GaussianHMM(n_components=num_states, covariance_type="diag", n_iter=1000,
+                    random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
     '''
-
+     
+    
+    
+    
+    
+    
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
+        split_method = KFold()
 
         # TODO implement model selection using CV
-        cv_score = []
-        n_range = range(self.min_n_components, self.max_n_components+1)
-        training = asl.build_training(features)  
-        X, lengths = training.get_word_Xlengths(word)
-        for num_states in n_range:
-            hmm_model = GaussianHMM(n_components=num_states, covariance_type="diag", n_iter=1000,
-                                    random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
-            logL = hmm_model.score(X, self.lengths)
-            cv_score.append(LogL)
+        # with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=RuntimeWarning)
+        # warnings.filterwarnings("ignore", category=RuntimeWarning)
+        try:          
+            cv_score = []
+            n_range = range(self.min_n_components, self.max_n_components+1)
+            split_method = KFold()
+
+            for num_states in n_range:
+            
+                for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
+                    logscores = []
+                    training = asl.build_training(cv_train_idx)  
+                    X, lengths = training.get_word_Xlengths(word)
+                    train_combined = combine_sequence(cv_train_idx, self.sequences)
+                    model = GaussianHMM(n_components=num_states, n_iter=1000).fit(train_combined, lengths)
+                    logscores.append(model.score(combine_sequence(cv_train_idx, self.sequences), lengths))
+
+                cv_score.append(np.mean(logscores))
         
-        min_value = min(cv_score)
-        best_n = cv_score.index(min_value)
-        return GaussianHMM(n_components=best_n, covariance_type="diag", n_iter=1000,
-                                    random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
+            min_value = min(cv_score)
+            best_n = cv_score.index(min_value)
+            return GaussianHMM(n_components=best_n).fit(self.X, self.lengths)     
         
-        
+        if self.verbose:
+                print("model created for {} with {} states".format(self.this_word, num_states))
+            return hmm_model
+        except:
+            if self.verbose:
+                print("failure on {} with {} states".format(self.this_word, num_states))
+            return None
