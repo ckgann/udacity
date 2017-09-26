@@ -136,25 +136,28 @@ class SelectorCV(ModelSelector):
       '''
  
     def select(self):
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        #warnings.filterwarnings("ignore", category=DeprecationWarning)
+        print('test')
         try: 
             cv_score = []
-            split_method = KFold(n_splits=3)
+            split_method = KFold(n_splits=min(3,len(self.sequences))
             n_range = range(self.min_n_components, self.max_n_components+1)
 
             for num_states in n_range:
             
                 for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
                     logscores = []                   
-                    X, lengths = self.get_word_Xlengths(word)
-                    train_combined = combine_sequence(cv_train_idx, self.sequences)
-                    model = GaussianHMM(n_components=num_states, n_iter=1000).fit(train_combined, lengths)
-                    logscores.append(model.score(combine_sequence(cv_train_idx, self.sequences), lengths))
+                    #X, lengths = self.get_word_Xlengths(word)
+                    train_x, train_legnths = combine_sequences(cv_train_idx, self.lengths)
+                    model = GaussianHMM(n_components=num_states, n_iter=1000).fit(train_x, train_legnths)
+                    logscores.append(model.score(combine_sequences(cv_train_idx, self.lengths))
+                    print(logscores)
 
                 cv_score.append(np.mean(logscores))
         
-            min_value = min(cv_score)
-            best_n = cv_score.index(min_value)
+            max_value = max(cv_score)
+            best_n = cv_score.index(max_value)
+            print('hi', max_value, 'and', best_n)
             return GaussianHMM(n_components=best_n).fit(self.sequences, self.lengths)     
         
             if self.verbose:
