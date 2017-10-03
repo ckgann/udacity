@@ -87,7 +87,6 @@ class SelectorBIC(ModelSelector):
             try:
                 #print('num_states=',num_states)
                 model = self.base_model(num_states)
-                print('nf',model.n_features)
                 #print('transmat_',model.transmat_)
                 if np.round(model.transmat_.sum()) == model.transmat_.shape[0]:                  
                     #print('if stmt triggered****')
@@ -100,8 +99,8 @@ class SelectorBIC(ModelSelector):
                     p4 = num_states*model.n_features
                     p = p1 + p2 + p3 + p4
                     #print('ps', p, p1, p2, p3, p4)
-                    n = model.transmat_.shape[0]
-                    print('n',n)
+                    n = len(self.X)
+                    print('len(x)',len(self.X))
                     BIC = -2 * logL + p * np.log(n) 
                     #print('BIC',BIC)
                     bic_score.append(BIC)
