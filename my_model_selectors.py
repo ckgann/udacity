@@ -79,9 +79,9 @@ class SelectorBIC(ModelSelector):
         # TODO implement model selection based on BIC scores
         
         
-        bic_score = []
+        bic_score = np.inf
         n_range = range(self.min_n_components, self.max_n_components+1)
-        
+
         
         for num_states in n_range:
             try:
@@ -100,19 +100,19 @@ class SelectorBIC(ModelSelector):
                     p = p1 + p2 + p3 + p4
                     #print('ps', p, p1, p2, p3, p4)
                     n = len(self.X)
-                    print('len(x)',len(self.X))
+                    #print('len(x)',len(self.X))
                     BIC = -2 * logL + p * np.log(n) 
                     #print('BIC',BIC)
-                    bic_score.append(BIC)
+                    if BIC < bic_score:
+                        bic_score , best_n = BIC , num_states
+                
         
             except:
                 if self.verbose:
                     print("failure on {} with {} states".format(self.this_word, num_states))
         
-        print(bic_score)
-        max_value = max(bic_score)
-        best_n = bic_score.index(max_value)
-        return GaussianHMM(n_components=best_n+1, covariance_type="diag", n_iter=1000,
+        
+        return GaussianHMM(n_components=best_n, covariance_type="diag", n_iter=1000,
                                     random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
      
 
@@ -142,53 +142,44 @@ class SelectorDIC(ModelSelector):
 
         # TODO implement model selection based on DIC scores
         
-        dic_score = []
+        dic_score = np.NINF
         n_range = range(self.min_n_components, self.max_n_components+1)
         other_words = self.words
         del other_words[self.this_word]
-        
-        
-        
-        #model = self.base_model(4)
+            
         #self.X, self.lengths = self.hwords['BOOK']
         #print('X',self.X, 'lengths',self.lengths)
         #logL_i = model.score(self.X, self.lengths)
         #print('check',logL_i)
-        
-        
-        
+               
         for num_states in n_range:
-            try:
-                #print('num_states=',num_states)
-                model = self.base_model(num_states)
-                print('p check 0', model.score(self.X, self.lengths))
-                #print('transmat_',model.transmat_)
-                if np.round(model.transmat_.sum()) == model.transmat_.shape[0]:                  
-                    print('if pass',self.this_word, 'ns',num_states)
-                    self.X, self.lengths = self.hwords[self.this_word]
-                    print('print check 2','X',self.X, 'lengths',self.lengths)
-                    logL_i = model.score(self.X, self.lengths)
-                    print('logL_i',logL_i,'numstates',num_states,'word'.self.this_word)
-                    M = 0
-                    logL_j = 0
-                    for word in self.other_words:
-                        M = M+1
-                        self.X, self.lengths = self.hwords[self.word]
-                        print('X',self.X, 'lengths',self.lengths,'M',M)
-                        logL_j += model.score(self.X, self.lengths)
-                        print('logL_i',logL_i)
-                    DIC = np.log(logL_i - (logL_j/M))
-                    
-                print('DIC',DIC)
-                dic_score.append(DIC)
+            model = self.base_model(num_states)
+            if np.round(model.transmat_.sum()) == model.transmat_.shape[0]:                  
+                self.X, self.lengths = self.hwords[self.this_word]
+                logL_i = model.score(self.X, self.lengths)
+                print('logL_i',logL_i,'numstates',num_states,'word',self.this_word)
+                
+                logL_j_other = []
+                for word in other_words:                      
+                    self.X, self.lengths = self.hwords[word]                   
+                    #print('X',self.X, 'lengths',self.lengths,'M',M)
+                    try:                      
+                        logL_j_other.append(model.score(self.X, self.lengths))
+                    except:
+                        pass
+                        
+                logL_j = np.mean(logL_j_other)
+                print('logL_i',logL_i,'logL_j',logL_j,'word',word,'num_states',num_states)
+                DIC = np.log(logL_i - logL_j)
+                print('DIC',DIC,'num_states',num_states)
+                if DIC > dic_score:
+                    dic_score , best_n = DIC , num_states
+                    print('best_n',best_n,'dic_score',dic_score)
+                          
+            
         
-            except:
-                if self.verbose:
-                    print("failure on {} with {} states".format(self.this_word, num_states))
-        
-        max_value = max(dic_score)
-        best_n = dic_score.index(max_value)
-        return GaussianHMM(n_components=best_n+1, covariance_type="diag", n_iter=1000,
+       
+        return GaussianHMM(n_components=best_n, covariance_type="diag", n_iter=1000,
                                     random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
      
         raise NotImplementedError
