@@ -153,11 +153,12 @@ class SelectorDIC(ModelSelector):
         #print('check',logL_i)
                
         for num_states in n_range:
+
             model = self.base_model(num_states)
             if np.round(model.transmat_.sum()) == model.transmat_.shape[0]:                  
                 self.X, self.lengths = self.hwords[self.this_word]
                 logL_i = model.score(self.X, self.lengths)
-                print('logL_i',logL_i,'numstates',num_states,'word',self.this_word)
+                #print('logL_i',logL_i,'numstates',num_states,'word',self.this_word)
                 
                 logL_j_other = []
                 for word in other_words:                      
@@ -169,13 +170,14 @@ class SelectorDIC(ModelSelector):
                         pass
                         
                 logL_j = np.mean(logL_j_other)
-                print('logL_i',logL_i,'logL_j',logL_j,'word',word,'num_states',num_states)
-                DIC = np.log(logL_i - logL_j)
-                print('DIC',DIC,'num_states',num_states)
+                #print('logL_i',logL_i,'logL_j',logL_j,'word',word,'num_states',num_states)
+                #if logL_i > logL_j:
+                DIC = logL_i - logL_j
+                #    print('DIC',DIC,'num_states',num_states)
                 if DIC > dic_score:
                     dic_score , best_n = DIC , num_states
-                    print('best_n',best_n,'dic_score',dic_score)
-                          
+                    #print('best_n',best_n,'dic_score',dic_score)
+                
             
         
        
