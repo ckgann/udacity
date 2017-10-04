@@ -144,45 +144,41 @@ class SelectorDIC(ModelSelector):
         
         dic_score = np.NINF
         n_range = range(self.min_n_components, self.max_n_components+1)
-        print('n_range',n_range)
-        other_words = self.words
-        del other_words[self.this_word]
-            
+          
         for num_states in n_range:
 
-            model = self.base_model(num_states)
-            #if np.round(model.transmat_.sum()) == model.transmat_.shape[0]:                  
-            self.X, self.lengths = self.hwords[self.this_word]
-                
             try:
+                model = self.base_model(num_states)                
+                self.X, self.lengths = self.hwords[self.this_word]
                 logL_i = model.score(self.X, self.lengths)
-                print('logL_i',logL_i,'numstates',num_states,'word',self.this_word)               
+                #print('logL_i',logL_i,'numstates',num_states,'word',self.this_word)               
                 logL_j_other = []
+                
+
+
+                for word in self.words:                      
+                    if word != self.this_word:
+                        self.X, self.lengths = self.hwords[word]                   
+                        try:                      
+                            logL_j_other.append(model.score(self.X, self.lengths))
+                        except:
+                            #print('j-score failed', num_states, word)
+                            pass
+
+                logL_j = np.mean(logL_j_other)
+                DIC = logL_i - logL_j
+                #print(num_states, 'bic-len',len(logL_j_other),'I',logL_i,'J',logL_j,'DIC',DIC)
+                
+                
+                    #    print('DIC',DIC,'num_states',num_states)
+                if DIC > dic_score:
+                    dic_score , best_n = DIC , num_states
+                    #print('best_n',best_n,'dic_score',dic_score)
             except:
                 pass
-            
-            for word in other_words:                      
-                self.X, self.lengths = self.hwords[word]                   
-                    #print('X',self.X, 'lengths',self.lengths,'M',M)
-                try:                      
-                    logL_j_other.append(model.score(self.X, self.lengths))
-                except:
-                    pass
-                        
-            logL_j = np.mean(logL_j_other)
-                #print('logL_i',logL_i,'logL_j',logL_j,'word',word,'num_states',num_states)
-                #if logL_i > logL_j:
-            DIC = logL_i - logL_j
-                #    print('DIC',DIC,'num_states',num_states)
-            if DIC > dic_score:
-                dic_score , best_n = DIC , num_states
-                    #print('best_n',best_n,'dic_score',dic_score)
-            
-                
-            
+                #print('model fit failed for', num_states)
             
         
-       
         return GaussianHMM(n_components=best_n, covariance_type="diag", n_iter=1000,
                                     random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
      
