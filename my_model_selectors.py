@@ -149,18 +149,16 @@ class SelectorDIC(ModelSelector):
 
             try:
                 model = self.base_model(num_states)                
-                self.X, self.lengths = self.hwords[self.this_word]
-                logL_i = model.score(self.X, self.lengths)
+                X, lengths = self.hwords[self.this_word]
+                logL_i = model.score(X, lengths)
                 #print('logL_i',logL_i,'numstates',num_states,'word',self.this_word)               
                 logL_j_other = []
                 
-
-
                 for word in self.words:                      
                     if word != self.this_word:
-                        self.X, self.lengths = self.hwords[word]                   
+                        X, lengths = self.hwords[word]                   
                         try:                      
-                            logL_j_other.append(model.score(self.X, self.lengths))
+                            logL_j_other.append(model.score(X, lengths))
                         except:
                             #print('j-score failed', num_states, word)
                             pass
@@ -169,8 +167,6 @@ class SelectorDIC(ModelSelector):
                 DIC = logL_i - logL_j
                 #print(num_states, 'bic-len',len(logL_j_other),'I',logL_i,'J',logL_j,'DIC',DIC)
                 
-                
-                    #    print('DIC',DIC,'num_states',num_states)
                 if DIC > dic_score:
                     dic_score , best_n = DIC , num_states
                     #print('best_n',best_n,'dic_score',dic_score)
