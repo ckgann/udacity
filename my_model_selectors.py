@@ -201,7 +201,9 @@ class SelectorCV(ModelSelector):
         print('min/max',self.min_n_components, self.max_n_components)
         #return
         try: 
-            cv_score = []
+            #cv_score = []
+            best_n=0
+            CV = np.PINF
             split_method = KFold(n_splits=min(3,len(self.sequences)))
             n_range = range(self.min_n_components, self.max_n_components+1)
 
@@ -212,31 +214,31 @@ class SelectorCV(ModelSelector):
 
                         #X, lengths = self.get_word_Xlengths(word)
                         train_x, train_legnths = combine_sequences(cv_train_idx, self.sequences)
-                        #print('train_legnths=',train_legnths, 'num_states=',num_states)
+                        print('train_legnths=',len(train_legnths),train_legnths, 'num_states=',num_states)
 
-                        model = GaussianHMM(n_components=num_states, n_iter=1000).fit(train_x, train_legnths)
-                        test_x, test_legnths = combine_sequences(cv_test_idx, self.sequences)
+                        if train_legnths > num_states:   
+                            try:
+                                model = GaussianHMM(n_components=num_states, n_iter=1000).fit(train_x, train_legnths)
+                                test_x, test_legnths = combine_sequences(cv_test_idx, self.sequences)
 
-                        print('ns test',num_states)
+                                print('ns test',num_states,'train_legnths=',len(train_legnths),train_legnths)
 
-                        if model.transmat_.sum() == model.transmat_.shape[0]:                  
-                            logscores.append(model.score(test_x, test_legnths))
-                            #print('good transmat',logscores)
-                            print('ns test',num_states)
-
-
-                    cv_score.append(np.mean(logscores))
-                
+                                if model.transmat_.sum() == model.transmat_.shape[0]:                  
+                                    cv_score = model.score(test_x, test_legnths)
+                                    if CV < cv_score:
+                                        CV , best_n = cv_score , num_states
+                            except:
+                                pass
+            
                 except:
                     if self.verbose:
                         print("failure on {} with {} states".format(self.this_word, num_states))
 
                 #print('cv_score=',cv_score)
         
-            max_value = max(cv_score)
-            best_n = cv_score.index(max_value)
-            print('max=', max_value, 'best=', best_n)
-            return GaussianHMM(n_components=best_n+1).fit(self.X, self.lengths)     
+            
+            #print('max=', max_value, 'best=', best_n)
+            return GaussianHMM(n_components=best_n).fit(self.X, self.lengths)     
         
             if self.verbose:
                 print("model created for {} with {} states".format(self.this_word, num_states))
