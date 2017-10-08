@@ -198,56 +198,60 @@ class SelectorCV(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
         warnings.filterwarnings("ignore", category=RuntimeWarning)
-        print('min/max',self.min_n_components, self.max_n_components)
+        #print('min/max',self.min_n_components, self.max_n_components)
         #return
-        try: 
+ 
             #cv_score = []
-            best_n=0
-            CV = np.PINF
-            split_method = KFold(n_splits=min(3,len(self.sequences)))
-            n_range = range(self.min_n_components, self.max_n_components+1)
+        best_n=0
+        CV = np.PINF
+        split_method = KFold(n_splits=min(3,len(self.sequences)))
+        n_range = range(self.min_n_components, self.max_n_components+1)
 
-            for num_states in n_range:
-                try:
-                    logscores = []
-                    for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
+           
+        for num_states in n_range:
+            cv_score = []
+            try:
+                for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
+                    train_x, train_legnths = combine_sequences(cv_train_idx, self.sequences)
+                    test_x, test_legnths = combine_sequences(cv_test_idx, self.sequences)
+                    #print('p1','train_legnths=',len(train_legnths),train_legnths, 'num_states=',num_states)  
+                    if train_legnths[0] > num_states:   
+                        #print('p2','enough samples',train_legnths[0] ,num_states)
+                        try:
+                            model = GaussianHMM(n_components=num_states, n_iter=1000).fit(train_x, train_legnths)
+                            if model.transmat_.sum() == model.transmat_.shape[0]: 
+                                #print('p3','good tmat','score=',model.score(test_x, test_legnths))
+                                try:
+                                    cv_score.append(model.score(test_x, test_legnths))
+                                    #print('p4','cvscore=',cv_score)
+                                except:
+                                    pass
+                                    #print('p5','score failed')                        
+                                   
+                        except:
+                            pass
+                            #print('p6','fit model failed',    train_legnths[0], num_states)  
 
-                        #X, lengths = self.get_word_Xlengths(word)
-                        train_x, train_legnths = combine_sequences(cv_train_idx, self.sequences)
-                        print('train_legnths=',len(train_legnths),train_legnths, 'num_states=',num_states)
 
-                        if train_legnths > num_states:   
-                            try:
-                                model = GaussianHMM(n_components=num_states, n_iter=1000).fit(train_x, train_legnths)
-                                test_x, test_legnths = combine_sequences(cv_test_idx, self.sequences)
-
-                                print('ns test',num_states,'train_legnths=',len(train_legnths),train_legnths)
-
-                                if model.transmat_.sum() == model.transmat_.shape[0]:                  
-                                    cv_score = model.score(test_x, test_legnths)
-                                    if CV < cv_score:
-                                        CV , best_n = cv_score , num_states
-                            except:
-                                pass
+                if np.mean(cv_score) < CV :
+                    CV, best_n = np.mean(cv_score), num_states                             
             
-                except:
-                    if self.verbose:
-                        print("failure on {} with {} states".format(self.this_word, num_states))
-
-                #print('cv_score=',cv_score)
-        
+            except:
+                if self.verbose:
+                    print('p7',"failure on {} with {} states".format(self.this_word, num_states)) 
             
-            #print('max=', max_value, 'best=', best_n)
-            return GaussianHMM(n_components=best_n).fit(self.X, self.lengths)     
-        
-            if self.verbose:
-                print("model created for {} with {} states".format(self.this_word, num_states))
-                return hmm_model
-        except Exception as e:
-            print(e)
-            import traceback
-            if self.verbose:
-                #print("failure on {} with {} states".format(self.this_word, num_states))               
-                print("".join(traceback.format_exception(etype=type(e),value=e,tb=e.__traceback__)))
 
-            return None
+        #print('p8',best_n, CV)
+        return GaussianHMM(n_components=best_n).fit(self.X, self.lengths)     
+        
+  #          if self.verbose:
+  #              print("model created for {} with {} states".format(self.this_word, num_states))
+  #              return hmm_model
+  #      except Exception as e:
+  #          print(e)
+  #          import traceback
+  #          if self.verbose:
+  #              #print("failure on {} with {} states".format(self.this_word, num_states))               
+  #              print("".join(traceback.format_exception(etype=type(e),value=e,tb=e.__traceback__)))
+
+    #        return None
