@@ -1,6 +1,6 @@
 import warnings
 from asl_data import SinglesData
-
+import numpy as np
 
 def recognize(models: dict, test_set: SinglesData):
     """ Recognize test word sequences from word models set
@@ -25,29 +25,28 @@ def recognize(models: dict, test_set: SinglesData):
     # return probabilities, guesses
     X_all = test_set.get_all_sequences
     lengths_all = test_set.get_all_Xlengths
-    words = []
-    ddict = {}
+    #ddict = {}
    
     for word_id in range(0,len(test_set.get_all_Xlengths())):
         X, lengths = test_set.get_all_Xlengths()[word_id]          
+        ddict = {}
         for word, model in models.items():
             try:
                 LogLvalue = model.score(X, lengths)
                 ddict[word] = logLvalue               
-                words.append(word_id)
                 
             except:
                 ddict[word] = np.NINF
-                words.append(word_id)
                 pass
             
-            probabilities.append(ddict)           
+        probabilities.append(ddict)           
             
             
     for dictionary in probabilities:
-        guesses.append(max(dictionary.iteritems(), key=operator.itemgetter(1))[0]
+        guesses.append(max(dictionary, key=dictionary.get))
+        #guesses.append(max(dictionary.items(), key=operator.itemgetter(1))[0])
         
-    print('guesses',len(guesses),guesses)
+    print('guesses',len(guesses),len(probabilities))
                        
     return (probabilities,guesses)
 
