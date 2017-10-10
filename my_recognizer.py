@@ -18,24 +18,48 @@ def recognize(models: dict, test_set: SinglesData):
            ['WORDGUESS0', 'WORDGUESS1', 'WORDGUESS2',...]
    """
     warnings.filterwarnings("ignore", category=DeprecationWarning)
+    import operator
     probabilities = []
     guesses = []
     # TODO implement the recognizer
     # return probabilities, guesses
     X_all = test_set.get_all_sequences
     lengths_all = test_set.get_all_Xlengths
-    
-    for word, model in models.items():
-        try:
-            X = X_all[word]
-            lengths = lenghts_all[word]
-            LogLvalue = model.score(X, lengths)
-            ddict = {word: logLvalue}
-            prababilities.append(ddict)
-            guesses.append(word)
-        except:
-            pass
-    
-    
-    
+    words = []
+    ddict = {}
+   
+    for word_id in range(0,len(test_set.get_all_Xlengths())):
+        X, lengths = test_set.get_all_Xlengths()[word_id]          
+        for word, model in models.items():
+            try:
+                LogLvalue = model.score(X, lengths)
+                ddict[word] = logLvalue               
+                words.append(word_id)
+                
+            except:
+                ddict[word] = np.NINF
+                words.append(word_id)
+                pass
+            
+            probabilities.append(ddict)           
+            
+            
+    for dictionary in probabilities:
+        guesses.append(max(dictionary.iteritems(), key=operator.itemgetter(1))[0]
+        
+    print('guesses',len(guesses),guesses)
+                       
     return (probabilities,guesses)
+
+
+
+
+
+
+
+
+
+
+
+
+
