@@ -33,12 +33,14 @@ def recognize(models: dict, test_set: SinglesData):
         for word, model in models.items():
             try:
                 LogLvalue = model.score(X, lengths)
-                ddict[word] = logLvalue               
+                ddict[word] = LogLvalue               
                 
             except:
                 ddict[word] = np.NINF
                 pass
-            
+        if word_id == 2:
+            print('word_id=2',ddict)
+                
         probabilities.append(ddict)           
             
             
@@ -46,7 +48,7 @@ def recognize(models: dict, test_set: SinglesData):
         guesses.append(max(dictionary, key=dictionary.get))
         #guesses.append(max(dictionary.items(), key=operator.itemgetter(1))[0])
         
-    print('guesses',len(guesses),len(probabilities))
+    print('guesses',len(guesses),len(probabilities),guesses[100])
                        
     return (probabilities,guesses)
 
